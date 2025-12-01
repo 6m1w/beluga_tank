@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>白鲸的故事 | Beluga's Story</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "three/addons/utils/SkeletonUtils.js": "https://unpkg.com/three@0.160.0/examples/jsm/utils/SkeletonUtils.js"
+            }
+        }
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-blue': '#020412',
+                        'card-bg': 'rgba(255, 255, 255, 0.05)',
+                        'accent-blue': '#00A3FF',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
+
+        body {
+            background-color: #020412;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #020412;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        /* Select styling hack for dark mode options */
+        select option {
+            background-color: #020412;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex flex-col relative">
+
+    <!-- Background Grid -->
+    <div class="absolute inset-0 z-0 pointer-events-none"
+        style="background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 50px 50px; opacity: 0.2;">
+    </div>
+
+    <!-- UI Layer -->
+    <div class="z-10 relative h-full flex flex-col px-24 pt-16 pb-10 justify-between">
+
+        <!-- Top Section -->
+        <div class="flex justify-between items-start">
+            <!-- Title -->
+            <div>
+                <h1 class="text-[56px] mb-4 tracking-wider">海洋馆内的一生</h1>
+                <h2 class="text-[28px] text-gray-400 font-light">白鲸的故事</h2>
+
+                <div class="mt-24 space-y-3 text-gray-400 text-[18px] font-light leading-relaxed max-w-xs">
+                    <div class="space-y-2">
+                        <p>全国海洋馆共有240头白鲸</p>
+                        <p>在海里，它们可以生存80年</p>
+                        <p>在馆里，它们只能生存20年</p>
+                    </div>
+
+                    <p>白鲸是除了人类外，最聪明的动物之一</p>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="flex space-x-4">
+                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
+                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Aquarium</div>
+                    <div class="text-sm font-medium" id="info-name">Loading...</div>
+                </div>
+                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
+                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Tank Size</div>
+                    <div class="text-sm font-medium" id="info-size">-</div>
+                </div>
+                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
+                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Beluga Count</div>
+                    <div class="text-sm font-medium" id="info-count">-</div>
+                </div>
+                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
+                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Location</div>
+                    <div class="text-sm font-medium" id="info-location">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Visualization Placeholder -->
+        <div id="tank-container" class="absolute inset-0 z-0 flex items-center justify-center">
+            <!-- Placeholder for Three.js -->
+            <div
+                class="border border-blue-500/30 bg-blue-500/5 w-[800px] h-[400px] flex items-center justify-center text-blue-300 backdrop-blur-sm">
+                水箱加水中...
+            </div>
+        </div>
+
+        <!-- Bottom Section -->
+        <div class="flex justify-between items-end">
+            <!-- Controls -->
+            <div class="flex space-x-6 bg-black/40 backdrop-blur-md p-2 rounded-2xl border border-white/10">
+                <div class="flex flex-col space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase font-bold tracking-wider ml-1">选择海洋馆</label>
+                    <div class="relative">
+                        <select id="aquarium-select"
+                            class="bg-transparent text-white text-sm border border-white/20 rounded-lg pl-3 pr-8 py-2 w-64 focus:outline-none focus:border-accent-blue appearance-none cursor-pointer hover:bg-white/5 transition-colors">
+                            <option>Loading...</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase font-bold tracking-wider ml-1">观看模式</label>
+                    <div class="flex bg-white/5 rounded-lg p-1">
+                        <button
+                            class="px-4 py-1.5 rounded-md text-xs font-medium bg-accent-blue text-white shadow-lg transition-all"
+                            id="btn-tank">白鲸视角</button>
+                        <button
+                            class="px-4 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white transition-all"
+                            id="btn-human">人类视角</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex space-x-4">
+                <div
+                    class="px-4 py-2 rounded-full border border-white/10 text-xs text-gray-500 bg-black/20 backdrop-blur-md">
+                    拖动旋转 • 滚动缩放
+                </div>
+                <div
+                    class="px-4 py-2 rounded-full border border-white/10 text-xs text-gray-500 bg-black/20 backdrop-blur-md">
+                    源数据：CCA 2024
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js?v=2"></script>
+</body>
+
+</html>
