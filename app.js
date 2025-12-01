@@ -162,6 +162,94 @@ document.addEventListener('DOMContentLoaded', () => {
     const infoLocation = document.getElementById('info-location');
     const tankContainer = document.getElementById('tank-container');
 
+    // initialize audio
+    const belugaAudio = document.getElementById('beluga-audio');
+    const belugaAudioToggle = document.getElementById('beluga-audio-toggle');
+    const belugaAudioKnob = document.getElementById('beluga-audio-knob');
+    const belugaAudioLabel = document.getElementById('beluga-audio-label');
+
+
+    let belugaAudioUnlocked = false; // 是否已经通过一次用户交互解锁
+    let belugaAudioOn = false; // 当前是否正在播放
+
+    function updateBelugaAudioUI() {
+        if (!belugaAudioToggle) return;
+
+        if (belugaAudioOn) {
+            belugaAudioToggle.classList.remove('text-gray-500', 'border-white/10');
+            belugaAudioToggle.classList.add('text-white', 'border-sky-400/70', 'bg-black/40');
+
+            if (belugaAudioKnob) {
+                belugaAudioKnob.classList.remove('translate-x-0', 'bg-gray-500');
+                belugaAudioKnob.classList.add('translate-x-3', 'bg-sky-400');
+            }
+            if (belugaAudioLabel) {
+                belugaAudioLabel.textContent = '白鲸叫声 · 开';
+            }
+        } else {
+            belugaAudioToggle.classList.remove('text-white', 'border-sky-400/70', 'bg-black/40');
+            belugaAudioToggle.classList.add('text-gray-500', 'border-white/10', 'bg-black/20');
+
+            if (belugaAudioKnob) {
+                belugaAudioKnob.classList.remove('translate-x-3', 'bg-sky-400');
+                belugaAudioKnob.classList.add('translate-x-0', 'bg-gray-500');
+            }
+            if (belugaAudioLabel) {
+                belugaAudioLabel.textContent = '白鲸叫声 · 关';
+            }
+        }
+    }
+
+    // 真正的播放/停止逻辑（供按钮和“首次点击自动打开”共用）
+    async function toggleBelugaAudio() {
+        if (!belugaAudio) return;
+
+        try {
+            // 第一次需要解锁音频
+            if (!belugaAudioUnlocked) {
+                try {
+                    await belugaAudio.play();
+                    belugaAudio.pause(); // 立刻停掉，只为解锁
+                    belugaAudioUnlocked = true;
+                } catch (err) {
+                    console.log('无法解锁音频（浏览器自动播放限制）', err);
+                    return;
+                }
+            }
+
+            if (belugaAudioOn) {
+                belugaAudio.pause();
+                belugaAudioOn = false;
+            } else {
+                await belugaAudio.play();
+                belugaAudioOn = true;
+            }
+
+            updateBelugaAudioUI();
+        } catch (err) {
+            console.log('Beluga audio toggle error', err);
+        }
+    }
+
+    // 按钮点击 → 手动开关
+    if (belugaAudio && belugaAudioToggle) {
+        belugaAudio.volume = 0.25;
+        belugaAudioToggle.addEventListener('click', toggleBelugaAudio);
+        updateBelugaAudioUI(); // 默认关
+    }
+
+    // 第一次点击页面任何地方 → 自动打开声音 + 打开 toggle
+    let belugaAutoToggled = false;
+    window.addEventListener(
+        'click',
+        () => {
+            if (belugaAutoToggled || belugaAudioOn || !belugaAudioToggle) return;
+            belugaAutoToggled = true;
+            belugaAudioToggle.click(); // 触发上面的 toggle 逻辑
+        },
+        { once: true }
+    );
+
     // State
     let sceneUpdateFn = null;
 
@@ -170,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Three.js
     sceneUpdateFn = initThreeJS();
+
 
     // Initial load
     if (aquariums.length > 0) {
