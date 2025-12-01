@@ -35,10 +35,16 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
 
         body {
-            background-color: #020412;
-            color: white;
+            margin: 0;
+            background: radial-gradient(circle at 20% -10%, #1f375b 0%, #020718 45%, #00030a 100%);
+            color: #f9fafb;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
+        }
+
+        #tank-container {
+            background: transparent;
+            /* 让 Three.js 画布直接叠在渐变上 */
         }
 
         /* Custom scrollbar */
