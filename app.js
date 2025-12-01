@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Camera
         const camera = new THREE.PerspectiveCamera(45, tankContainer.clientWidth / tankContainer.clientHeight, 0.1, 100);
-        camera.position.set(0, 5, 25);
+        camera.position.set(6, 6, 20);
 
         // Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -340,12 +340,22 @@ document.addEventListener('DOMContentLoaded', () => {
         tankGroup.add(tankMesh);
 
         // Grid Helper
-        // const gridHelper = new THREE.GridHelper(50, 50, 0x333333, 0x111111);
-        // gridHelper.position.y = -2.5;
-        // scene.add(gridHelper);
+
         const gridHelper = new THREE.GridHelper(50, 50, 0x333333, 0x111111);
         gridHelper.position.y = -BASE_TANK_HEIGHT / 2;
         scene.add(gridHelper);
+
+        // 让格子线几乎看不见
+        if (Array.isArray(gridHelper.material)) {
+            gridHelper.material.forEach(m => {
+                m.transparent = true;
+                m.opacity = 0.08;      // 你可以调到 0.05 ~ 0.15 之间试试
+            });
+        } else {
+            gridHelper.material.transparent = true;
+            gridHelper.material.opacity = 0.08;
+        }
+
         // Architectural Dimension Helper
         function createDimension(p1, p2, text, offsetVector) {
             const group = new THREE.Group();
