@@ -535,26 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 根据当前 tankLength / tankWidth / tankHeight 重建尺寸线 + 文本
-        // function rebuildDimensions() {
-        //     // 先把旧的删掉
-        //     if (dimensionGroup) {
-        //         scene.remove(dimensionGroup);
-        //     }
-        //     dimensionGroup = new THREE.Group();
-        //     scene.add(dimensionGroup);
-
-        //     const halfL = tankLength / 2;
-        //     const halfW = tankWidth / 2;
-        //     const halfH = tankHeight / 2;
-
-        //     // 1) Length 尺寸：底部前侧，从左到右
-        //     // 从 (-L/2, -H/2, +W/2) 到 (+L/2, -H/2, +W/2)，向 +Z 偏一点
-        //     const lenDim = createDimension(
-        //         new THREE.Vector3(-halfL, -halfH, halfW),
-        //         new THREE.Vector3(halfL, -halfH, halfW),
-        //         formatMeters(tankLength),
-        //         new THREE.Vector3(0, 0, 1.5)
-        //     );
         function rebuildDimensions() {
             if (dimensionGroup) {
                 scene.remove(dimensionGroup);
@@ -634,23 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return { length: L, width: W, height: H };
         }
 
-        // function repositionHumanForTank() {
-        //     if (!human) return;
-
-        //     const floorY = -tankHeight / 2;       // 缸底高度
-        //     const offsetZ = tankWidth / 2 + 1.0;  // 比玻璃前再往外 1m，当走道
-        //     const patrolRange = tankLength / 2;   // 沿着整条长边走
-
-        //     // 起始点：左前下角稍微往外一点
-        //     human.position.set(-patrolRange, floorY, offsetZ);
-        //     human.rotation.y = Math.PI / 2;       // 面向 +X 方向走
-
-        //     // 更新行走范围
-        //     human.userData.patrolRange = patrolRange;
-        //     // 每次重置方向，从左往右
-        //     human.userData.direction = 1;
-        // }
-
 
         // 根据选中的 facility 更新鱼缸尺寸
         function updateTankSize(aquarium) {
@@ -696,17 +659,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const h = human;
 
             // Scale to 1.7m height
-            // Previous attempts to measure mesh failed (gave huge or tiny values).
-            // Let's hardcode a reasonable scale based on visual feedback.
-            // If the model is ~1.7m tall in its own units, scale should be 1.
-            // If it's huge (28 units), we need to scale down.
-            // 1.7 / 28 = ~0.06. This might be what happened and it looked like a dot.
-            // Maybe the "28" was actually correct and it just LOOKED small in a 20m tank?
-            // A 1.7m human in a 20m tank is small (less than 1/10th).
-            // But "red dot" implies it's barely visible.
-            // Let's try a fixed scale that looks good visually, e.g., 1.0 or 0.5.
-            // User said "red dot", so it was too small.
-            // Let's try setting scale to 1.0 first to see the "natural" size.
             h.scale.set(1, 1, 1);
 
             // 先临时放到原来的位置，后面会统一 reposition
@@ -755,31 +707,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
 
-        //     // Animation
-        //     const mixer = new THREE.AnimationMixer(human);
-        //     const clip = gltf.animations.find(a => a.name === '2953314151920_TempMotion') || gltf.animations[0];
-        //     if (clip) {
-        //         const action = mixer.clipAction(clip);
-        //         action.play();
-        //     }
-        //     mixers.push(mixer);
-
-        //     // Patrol Logic
-        //     const speed = 1.0;
-        //     const patrolRange = 10;
-        //     let direction = 1;
-
-        //     human.userData.update = (delta) => {
-        //         human.position.x += speed * delta * direction;
-        //         if (human.position.x > patrolRange) {
-        //             direction = -1;
-        //             human.rotation.y = -Math.PI / 2;
-        //         } else if (human.position.x < -patrolRange) {
-        //             direction = 1;
-        //             human.rotation.y = Math.PI / 2;
-        //         }
-        //     };
-        // });
 
         // === Human Scale Logic ===
         const HUMAN_AS_BELUGA_SCALE = 4 / 1.7;
@@ -888,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 这里用当前缸高算：
             // - yBottom：几乎贴地板（-tankHalfH + 0.1）
-            // - yTop：在中部（0），你可以改成 -0.3 更压抑
+            // - yTop：在中部（0），可以改成 -0.3 更压抑
             const yBottom = -tankHalfH + 0.1;
             const yTop = 0.0;
 
