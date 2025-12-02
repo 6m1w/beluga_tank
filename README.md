@@ -5,17 +5,17 @@
 [![Website Status](https://img.shields.io/website?url=https%3A%2F%2F6m1w.github.io%2Fbeluga_tank%2F)](https://6m1w.github.io/beluga_tank/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-### 🔗 [点击体验在线可视化 | Live Demo](https://6m1w.github.io/beluga_tank/)
+### 🔗 [点击体验 | Feel the beluga ](https://6m1w.github.io/beluga_tank/)
 
 ---
 
 ## 📖 项目背景 (Background)
 
-这个项目的灵感源于我参观海洋馆的经历，以及与前白鲸驯养师[**邵然**](https://eu.36kr.com/zh/p/3473328573536900)的一次深入对谈]。
+这个项目的灵感源于我参观海洋馆的经历，以及与前白鲸驯养师[**邵然**](https://eu.36kr.com/zh/p/3473328573536900)的一次深入对谈。
 
 当你站在玻璃墙外惊叹于白鲸的微笑时，可能不知道玻璃墙内正在发生的残酷现实：
 
-* **失去自由：** 白鲸高度社会化，通常 10 头结群。但在中国，它们大多自幼被捕，第一堂课是学习如何吃死鱼。
+* **失去自由：** 白鲸高度社会化，通常 10 头结群。但在海洋馆，它们大多自幼被捕，第一堂课是学习如何吃死鱼。
 * **感官折磨：** 它们在野外能潜入几百米深海，利用声呐与数公里外的同伴交流。而在海洋馆，它们被困在仅 20 米深的水泥缸里，发出的声波会被缸壁直接反射回来——这对依靠声呐生存的白鲸来说，是一种持续的精神折磨。
 * **寿命折损：** * 🌊 野外寿命：**80 年**
     * 🏥 馆内寿命：**~20 年**
@@ -58,3 +58,4 @@ This project visualizes the harsh reality of captive beluga whales. In the wild,
 This visualization compares the vast ocean to the cramped tanks, highlighting the cruelty of captivity.
 
 **Data source:** CCA 2024 & Expert interviews.
+
