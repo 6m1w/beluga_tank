@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
-console.log('App.js loaded');
+// App initialized
 
 document.addEventListener('DOMContentLoaded', () => {
     // Embedded data from Beluga_in_captivity_china_2025_tank.csv
@@ -534,9 +534,36 @@ document.addEventListener('DOMContentLoaded', () => {
             return rounded.toFixed(1) + 'm';
         }
 
+        // Helper to dispose a group and its children's resources
+        function disposeGroup(group) {
+            if (!group) return;
+            group.traverse((node) => {
+                if (node.isMesh || node.isLine) {
+                    if (node.geometry) node.geometry.dispose();
+                    if (node.material) {
+                        if (Array.isArray(node.material)) {
+                            node.material.forEach(m => {
+                                if (m.map) m.map.dispose();
+                                m.dispose();
+                            });
+                        } else {
+                            if (node.material.map) node.material.map.dispose();
+                            node.material.dispose();
+                        }
+                    }
+                }
+                if (node.isSprite && node.material) {
+                    if (node.material.map) node.material.map.dispose();
+                    node.material.dispose();
+                }
+            });
+        }
+
         // 根据当前 tankLength / tankWidth / tankHeight 重建尺寸线 + 文本
         function rebuildDimensions() {
             if (dimensionGroup) {
+                // Dispose old textures and geometries to prevent memory leak
+                disposeGroup(dimensionGroup);
                 scene.remove(dimensionGroup);
             }
             dimensionGroup = new THREE.Group();
@@ -636,9 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 尺寸线 + 标注重建
             rebuildDimensions();
 
-            repositionHumanForTank();  // 👈 每次更新缸尺寸后，顺带重摆人和行走范围
-
-            console.log('Tank size updated:', { length, width, height });
+            repositionHumanForTank();
         }
 
 
@@ -646,6 +671,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const loader = new GLTFLoader();
         const mixers = [];
         const clock = new THREE.Clock();
+
+        // Updatable objects registry (avoids scene.traverse each frame)
+        const updatables = [];
 
         // Beluga Management
         let belugaTemplate = null;
@@ -704,6 +732,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 h.userData.direction = dir;
             };
+
+            // Register human for animation updates
+            updatables.push(h);
         });
 
 
@@ -810,21 +841,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // In Human Scale mode, force count to 0 (hide belugas)
             const effectiveCount = isHumanScale ? 0 : count;
 
-            // === 1. Vertical range: from almost bottom to mid-water ===
-            const tankHalfH = tankHeight / 2
-
-            // 这里用当前缸高算：
-            // - yBottom：几乎贴地板（-tankHalfH + 0.1）
-            // - yTop：在中部（0），可以改成 -0.3 更压抑
-            const yBottom = -tankHalfH + 0.1;
-            const yTop = 0.0;
-
-            const verticalRange = yTop - yBottom; // > 0
-
-            console.log('Vertical range (dynamic):',
-                yBottom.toFixed(2), '->', yTop.toFixed(2),
-                'tankHeight=', tankHeight
-            );
+            // NOTE: Vertical range is now calculated dynamically inside each beluga's
+            // update function to handle tank size changes correctly.
 
             // ……后面是 Remove / Add belugas 的逻辑
 
@@ -833,12 +851,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (belugaGroup.userData.helper) {
                     scene.remove(belugaGroup.userData.helper);
                 }
-                scene.remove(belugaGroup);
-                // Find mixer associated with the model inside the group
-                // The mixer root is the model, not the group.
-                // We need to find the mixer whose root is a child of this group.
+
+                // Remove from updatables registry
+                const updatableIndex = updatables.indexOf(belugaGroup);
+                if (updatableIndex !== -1) updatables.splice(updatableIndex, 1);
+
+                // Find and properly dispose mixer
                 const mixerIndex = mixers.findIndex(m => m.getRoot().parent === belugaGroup);
-                if (mixerIndex !== -1) mixers.splice(mixerIndex, 1);
+                if (mixerIndex !== -1) {
+                    const mixer = mixers[mixerIndex];
+                    mixer.stopAllAction();
+                    mixer.uncacheRoot(mixer.getRoot());
+                    mixers.splice(mixerIndex, 1);
+                }
+
+                // Dispose geometry and materials to free GPU memory
+                belugaGroup.traverse((node) => {
+                    if (node.isMesh) {
+                        if (node.geometry) node.geometry.dispose();
+                        if (node.material) {
+                            if (Array.isArray(node.material)) {
+                                node.material.forEach(m => m.dispose());
+                            } else {
+                                node.material.dispose();
+                            }
+                        }
+                    }
+                });
+
+                scene.remove(belugaGroup);
             }
 
             // Add new
@@ -848,6 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 belugaGroup.name = 'BelugaGroup';
                 scene.add(belugaGroup);
                 activeBelugas.push(belugaGroup);
+                updatables.push(belugaGroup); // Register for animation updates
 
                 // Clone the model and add to group
                 // Use SkeletonUtils to ensure unique skeleton for SkinnedMesh
@@ -877,20 +919,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Assign update function to userData of the GROUP
                 belugaGroup.userData.update = (delta, time) => {
-                    // 当前缸半长/半宽（每帧用最新的 tankLength/tankWidth）
-                    const halfL = tankLength / 2 - 0.5; // 留一点 margin
+                    // Dynamically calculate bounds each frame to handle tank size changes
+                    const halfL = tankLength / 2 - 0.5; // margin for horizontal
                     const halfW = tankWidth / 2 - 0.5;
+                    const tankHalfH = tankHeight / 2;
+
+                    // Vertical range: from near bottom to mid-water (recalculated each frame)
+                    // yBottom: near tank floor (with small margin)
+                    // yTop: fixed at 0 (represents water surface / mid-tank)
+                    const yBottom = -tankHalfH + 0.3;
+                    const yTop = 0;
+                    const verticalRange = yTop - yBottom;
 
                     // Elliptical movement logic
                     const angle = time * speed + angleOffset;
 
                     // Horizontal bounds check
-                    const x = Math.cos(angle) * (halfL * 0.8); // ~ +/- 8m
-                    const z = Math.sin(angle) * (halfW * 0.8); // ~ +/- 2m
+                    const x = Math.cos(angle) * (halfL * 0.8);
+                    const z = Math.sin(angle) * (halfW * 0.8);
 
                     // Vertical movement: Oscillate within the full safe range
-                    // 垂直：显式把 [-1,1] 映射到 [yBottom, yTop]
-                    const phase = time * speed * 0.125 + angleOffset;   // 越小越慢
+                    const phase = time * speed * 0.125 + angleOffset;
                     const s = Math.sin(phase);                        // [-1, 1]
                     const t = (s + 1) / 2;                            // [0, 1]
                     const y = yBottom + t * verticalRange;            // [yBottom, yTop]
@@ -911,32 +960,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     belugaGroup.lookAt(lookTarget);
                     belugaGroup.position.copy(targetPos);
-
-                    // Update Debug Helper
-                    // if (boxHelper) boxHelper.update();
-
-                    // Debug log (reduced frequency)
-                    if (Math.random() < 0.001) {
-                        console.log('BelugaGroup pos:', belugaGroup.position.x.toFixed(2), belugaGroup.position.y.toFixed(2), belugaGroup.position.z.toFixed(2));
-                    }
                 };
             }
         }
 
-        // Animation Loop
+        // Animation Loop (optimized: uses updatables array instead of scene.traverse)
         function animate() {
             requestAnimationFrame(animate);
 
             const delta = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            mixers.forEach(mixer => mixer.update(delta));
+            // Update animation mixers
+            for (let i = 0; i < mixers.length; i++) {
+                mixers[i].update(delta);
+            }
 
-            scene.traverse((obj) => {
+            // Update registered updatable objects (avoids scene.traverse overhead)
+            for (let i = 0; i < updatables.length; i++) {
+                const obj = updatables[i];
                 if (obj.userData.update) {
                     obj.userData.update(delta, time);
                 }
-            });
+            }
 
             controls.update();
             renderer.render(scene, camera);
@@ -944,11 +990,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         animate();
 
-        // Handle Resize
-        window.addEventListener('resize', () => {
+        // Handle Resize (debounced to prevent excessive re-renders)
+        let resizeTimeout = null;
+        function handleResize() {
             camera.aspect = tankContainer.clientWidth / tankContainer.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(tankContainer.clientWidth, tankContainer.clientHeight);
+        }
+
+        window.addEventListener('resize', () => {
+            if (resizeTimeout) clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(handleResize, 100);
         });
 
         return { updateBelugas, updateTankSize, setHumanScaleMode };
