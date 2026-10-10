@@ -2,10 +2,10 @@
 
 > **"对于它们 3-4 米的身长来说，一辈子生活在一个这样的海缸里，就如同一个成年人，一辈子只能在 20 平米的房间里踱步。"**
 
-[![Website Status](https://img.shields.io/website?url=https%3A%2F%2F6m1w.github.io%2Fbeluga_tank%2F)](https://6m1w.github.io/beluga_tank/)
+[![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fbeluga.earth%2F)](https://beluga.earth/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-### 🔗 [点击体验 | Feel the beluga ](https://6m1w.github.io/beluga_tank/)
+### 🔗 [点击体验 | Feel the beluga ](https://beluga.earth/)
 
 ---
 
