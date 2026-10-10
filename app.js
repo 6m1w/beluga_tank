@@ -5,6 +5,13 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // App initialized
 
+// Send a GA4 event; no-op if gtag is blocked or not loaded
+function track(name, params = {}) {
+    if (typeof window.gtag === 'function') {
+        window.gtag('event', name, params);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Embedded data from Beluga_in_captivity_china_2025_tank.csv
     const aquariums = [
@@ -171,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let belugaAudioUnlocked = false; // 是否已经通过一次用户交互解锁
     let belugaAudioOn = false; // 当前是否正在播放
+    let audioToggleTrigger = 'manual'; // 'auto' when toggled by the first-page-click handler
 
     function updateBelugaAudioUI() {
         if (!belugaAudioToggle) return;
@@ -204,6 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function toggleBelugaAudio() {
         if (!belugaAudio) return;
 
+        // Capture who triggered this toggle before any await
+        const trigger = audioToggleTrigger;
+        audioToggleTrigger = 'manual';
+
         try {
             // 第一次需要解锁音频
             if (!belugaAudioUnlocked) {
@@ -226,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             updateBelugaAudioUI();
+            track('audio_toggle', { state: belugaAudioOn ? 'on' : 'off', trigger });
         } catch (err) {
             console.log('Beluga audio toggle error', err);
         }
@@ -245,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         () => {
             if (belugaAutoToggled || belugaAudioOn || !belugaAudioToggle) return;
             belugaAutoToggled = true;
+            audioToggleTrigger = 'auto';
             belugaAudioToggle.click(); // 触发上面的 toggle 逻辑
         },
         { once: true }
@@ -284,6 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
         select.addEventListener('change', (e) => {
             const selectedIndex = e.target.value;
             updateInfo(data[selectedIndex]);
+            track('select_aquarium', {
+                aquarium_name: data[selectedIndex].name,
+                city: data[selectedIndex].city,
+            });
         });
     }
 
@@ -295,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 按钮 UI 状态
         setActiveMode(btnTank, btnHuman);
+        track('view_mode', { mode: 'tank' });
     });
 
     btnHuman.addEventListener('click', () => {
@@ -305,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 按钮 UI 状态
         setActiveMode(btnHuman, btnTank);
+        track('view_mode', { mode: 'human' });
     });
 
     // Update Info Cards
