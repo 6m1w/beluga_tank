@@ -41,10 +41,19 @@
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐋</text></svg>">
     <link rel="modulepreload" href="vendor/three/three.module.min.js">
     <link rel="preload" href="beluga.glb" as="fetch" crossorigin>
+    <link rel="preload" href="fonts/xique-song.woff2" as="font" type="font/woff2" crossorigin>
     <script type="importmap">
         { "imports": { "three": "./vendor/three/three.module.min.js", "three/addons/": "./vendor/three/addons/" } }
     </script>
     <style>
+        /* 喜鹊宋体简繁版 (commercial license), subset to the page's characters by scripts/subset_font.py */
+        @font-face {
+            font-family: "Xique Song";
+            src: url("fonts/xique-song.woff2") format("woff2");
+            font-weight: 400;
+            font-display: swap;
+        }
+
         :root {
             --night: #0c1a26;
             --night-2: #12263a;
@@ -52,6 +61,7 @@
             --muted: #8ea3b2;
             --rule: rgba(230, 237, 241, 0.14);
             --tape: #e9c46a; /* measuring-tape yellow, used only for measurements */
+            --display: "Xique Song", "Songti SC", "STSong", "Noto Serif SC", serif;
             --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", serif;
             --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
         }
@@ -80,7 +90,7 @@
             padding: 14px 16px;
             border-bottom: 1px solid var(--rule);
         }
-        .masthead { font-family: var(--serif); font-size: 17px; letter-spacing: 0.08em; margin: 0; font-weight: 600; }
+        .masthead { font-family: var(--display); font-size: 18px; letter-spacing: 0.1em; margin: 0; font-weight: 400; font-synthesis: none; }
         .masthead small { color: var(--muted); font-family: var(--sans); font-size: 12px; letter-spacing: 0; margin-left: 10px; font-weight: 400; }
 
         #tank-container {
@@ -149,7 +159,7 @@
         body[data-mode="human"] .mode-caption .human { display: inline; }
         .story { grid-area: story; padding: 28px 16px 40px; max-width: 34em; }
         .story h2 {
-            font-family: var(--serif); font-weight: 700;
+            font-family: var(--display); font-weight: 400; font-synthesis: none;
             font-size: clamp(40px, 11vw, 76px); line-height: 1.05; letter-spacing: 0.02em;
             margin: 0 0 24px;
         }
