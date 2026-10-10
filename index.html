@@ -12,7 +12,7 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>白鲸 | Beluga - 海洋馆内的一生 | A Life in Captivity</title>
     <meta name="description"
         content="在中国，240头白鲸生活在狭小的海洋馆水箱中。本项目通过3D可视化还原白鲸的生存环境，对比其在野外80年的寿命与馆内仅20年的余生。关注动物权益，拒绝动物表演。Explore the life of beluga whales in captivity. A data visualization project highlighting the contrast between their life in the ocean and in aquariums.">
@@ -22,83 +22,176 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://6m1w.github.io/beluga_tank/">
+    <meta property="og:url" content="https://beluga.earth/">
     <meta property="og:title" content="白鲸 | Beluga - 海洋馆内的一生 | A Life in Captivity">
     <meta property="og:description"
         content="Explore the life of beluga whales in captivity. A data visualization project highlighting the contrast between their life in the ocean and in aquariums.">
-    <meta property="og:image" content="https://6m1w.github.io/beluga_tank/social-share.jpg">
+    <meta property="og:image" content="https://beluga.earth/social-share.jpg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://6m1w.github.io/beluga_tank/">
+    <meta property="twitter:url" content="https://beluga.earth/">
     <meta property="twitter:title" content="白鲸 | Beluga - 海洋馆内的一生 | A Life in Captivity">
     <meta property="twitter:description"
         content="Explore the life of beluga whales in captivity. A data visualization project highlighting the contrast between their life in the ocean and in aquariums.">
-    <meta property="twitter:image" content="https://6m1w.github.io/beluga_tank/social-share.jpg">
+    <meta property="twitter:image" content="https://beluga.earth/social-share.jpg">
 
     <!-- Favicon -->
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐋</text></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="modulepreload" href="vendor/three/three.module.min.js">
+    <link rel="preload" href="beluga.glb" as="fetch" crossorigin>
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "three/addons/utils/SkeletonUtils.js": "https://unpkg.com/three@0.160.0/examples/jsm/utils/SkeletonUtils.js"
-            }
-        }
-    </script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'deep-blue': '#020412',
-                        'card-bg': 'rgba(255, 255, 255, 0.05)',
-                        'accent-blue': '#6499C3',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
+        { "imports": { "three": "./vendor/three/three.module.min.js", "three/addons/": "./vendor/three/addons/" } }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
-
-        body {
-            margin: 0;
-            background: radial-gradient(circle at 20% -10%, #1f375b 0%, #020718 45%, #00030a 100%);
-            color: #f9fafb;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+        :root {
+            --night: #0c1a26;
+            --night-2: #12263a;
+            --text: #e6edf1;
+            --muted: #8ea3b2;
+            --rule: rgba(230, 237, 241, 0.14);
+            --tape: #e9c46a; /* measuring-tape yellow, used only for measurements */
+            --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", serif;
+            --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
         }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; }
+        body {
+            background: var(--night);
+            color: var(--text);
+            font-family: var(--sans);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-areas: "head" "tank" "controls" "story";
+            min-height: 100svh;
+        }
+
+        header {
+            grid-area: head;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--rule);
+        }
+        .masthead { font-family: var(--serif); font-size: 17px; letter-spacing: 0.08em; margin: 0; font-weight: 600; }
+        .masthead small { color: var(--muted); font-family: var(--sans); font-size: 12px; letter-spacing: 0; margin-left: 10px; font-weight: 400; }
 
         #tank-container {
-            background: transparent;
-            /* 让 Three.js 画布直接叠在渐变上 */
+            grid-area: tank;
+            position: relative;
+            height: 52svh;
+            background: radial-gradient(ellipse at 50% 40%, var(--night-2), var(--night) 70%);
+            --scene-accent: #7fb3d5;
+            --scene-label: #e9c46a;
+            --scene-label-line: #e9c46a;
+            --scene-font: 600 34px -apple-system, "PingFang SC", sans-serif;
+            --scene-glass-opacity: 0.07;
+            --scene-line-opacity: 0.45;
+            --scene-grid: #8ea3b2;
+            --scene-grid-opacity: 0.06;
         }
+        #tank-container canvas { display: block; width: 100%; height: 100%; }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        #load-status {
+            position: absolute; left: 16px; bottom: 14px;
+            font-size: 12px; color: var(--muted);
+            padding-bottom: 6px;
+            background: linear-gradient(var(--tape), var(--tape)) left bottom / calc(var(--progress, 0) * 100%) 2px no-repeat,
+                        linear-gradient(var(--rule), var(--rule)) left bottom / 100% 2px no-repeat;
+            min-width: 160px;
         }
+        .hint { position: absolute; right: 16px; bottom: 14px; font-size: 12px; color: var(--muted); margin: 0; }
+        .hint .touch { display: none; }
+        @media (hover: none) { .hint .mouse { display: none; } .hint .touch { display: inline; } }
 
-        ::-webkit-scrollbar-track {
-            background: #020412;
+        .controls {
+            grid-area: controls;
+            display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end;
+            padding: 16px;
+            border-bottom: 1px solid var(--rule);
         }
-
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 4px;
+        .field { display: grid; gap: 6px; flex: 1 1 220px; }
+        .field-label { font-size: 12px; color: var(--muted); }
+        select {
+            appearance: none;
+            font: inherit; font-size: 15px; color: var(--text);
+            background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238ea3b2'%3E%3Cpath d='M5.3 7.3 10 12l4.7-4.7 1.4 1.4L10 14.8 3.9 8.7z'/%3E%3C/svg%3E") right 10px center / 16px no-repeat;
+            border: 1px solid var(--rule); border-radius: 4px;
+            padding: 10px 36px 10px 12px; width: 100%; min-height: 44px; cursor: pointer;
         }
+        select option { background: var(--night); }
+        .segmented { display: inline-flex; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+        .segmented button, .audio {
+            font: inherit; font-size: 14px; color: var(--muted);
+            background: transparent; border: 0; padding: 0 16px; min-height: 44px; cursor: pointer;
+        }
+        .segmented button[aria-pressed="true"] { background: var(--text); color: var(--night); }
+        .audio { border: 1px solid var(--rule); border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; }
+        .audio::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--muted); }
+        .audio[aria-pressed="true"] { color: var(--text); }
+        .audio[aria-pressed="true"]::before { background: var(--tape); border-color: var(--tape); }
+        button:hover, select:hover { color: var(--text); }
+        :focus-visible { outline: 2px solid var(--tape); outline-offset: 2px; }
 
-        /* Select styling hack for dark mode options */
-        select option {
-            background-color: #020412;
-            color: white;
+        .mode-caption {
+            position: absolute; left: 16px; top: 14px; right: 16px; margin: 0;
+            font-size: 13px; line-height: 1.6; color: var(--muted); max-width: 30em;
+        }
+        .mode-caption b { color: var(--text); font-weight: 600; }
+        .mode-caption .human, body[data-mode="human"] .mode-caption .tank { display: none; }
+        body[data-mode="human"] .mode-caption .human { display: inline; }
+        .story { grid-area: story; padding: 28px 16px 40px; max-width: 34em; }
+        .story h2 {
+            font-family: var(--serif); font-weight: 700;
+            font-size: clamp(40px, 11vw, 76px); line-height: 1.05; letter-spacing: 0.02em;
+            margin: 0 0 24px;
+        }
+        .story h2 .unit { color: var(--tape); }
+        .story p { font-family: var(--serif); font-size: 17px; line-height: 1.85; color: #c9d5dc; margin: 0 0 14px; }
+        .story strong { color: var(--text); font-weight: 600; }
+        .story { scrollbar-width: thin; scrollbar-color: rgba(230, 237, 241, 0.18) transparent; }
+        .story h3 { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--text); margin: 28px 0 10px; }
+        .views { margin: 0; padding: 0; list-style: none; }
+        .views li { font-size: 15px; line-height: 1.75; color: #c9d5dc; margin: 0 0 10px; padding-left: 14px; border-left: 2px solid var(--rule); }
+        .views b { color: var(--text); }
+        .story .ask { color: var(--text); font-weight: 600; margin-top: 24px; }
+
+        .record { margin: 24px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 14px; border-top: 1px solid var(--rule); padding-top: 16px; }
+        .record dt { color: var(--muted); }
+        .record dd { margin: 0; font-variant-numeric: tabular-nums; }
+        #info-size, #info-human { color: var(--tape); }
+        .story .source { margin-top: 20px; line-height: 1.6; font-size: 12px; color: var(--muted); font-family: var(--sans); }
+        .source a { color: inherit; }
+
+        /* Laptop and up: story column on the left, tank fills the rest */
+        @media (min-width: 960px) {
+            body { overflow: hidden; }
+            .page {
+                height: 100svh; min-height: 0;
+                grid-template-columns: clamp(340px, 30vw, 460px) 1fr;
+                grid-template-rows: auto 1fr;
+                grid-template-areas: "head controls" "story tank";
+            }
+            header { padding: 18px 32px; border-right: 1px solid var(--rule); }
+            .controls { padding: 12px 32px; justify-content: flex-end; flex-wrap: nowrap; align-items: center; }
+            .controls .field { flex: 0 1 300px; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
+            #tank-container { height: auto; min-height: 0; }
+            #load-status { left: 32px; bottom: 24px; }
+            .hint { right: 32px; bottom: 24px; }
+            .story { overflow-y: auto; padding: 36px 32px 32px; border-right: 1px solid var(--rule); max-width: none; }
+            .story h2 { font-size: clamp(52px, 4.6vw, 80px); }
+        }
+        @media (min-width: 960px) and (max-height: 820px) {
+            .story { padding-top: 24px; }
+            .story h2 { font-size: 52px; margin-bottom: 16px; }
+            .story p { font-size: 16px; line-height: 1.75; }
         }
     </style>
     <!--add msft clarity-->
@@ -111,157 +204,60 @@
     </script>
 </head>
 
-<body class="h-screen w-screen flex flex-col relative">
+<body>
+    <div class="page">
+        <header>
+            <h1 class="masthead">海洋馆内的一生<small>白鲸的故事</small></h1>
+        </header>
 
-    <!-- Background Grid -->
-    <div class="absolute inset-0 z-0 pointer-events-none"
-        style="background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 50px 50px; opacity: 0.2;">
+        <div id="tank-container" aria-label="水缸的 3D 模型，可拖动旋转">
+            <p class="mode-caption">
+                <span class="tank"><b>白鲸视角</b>：水缸和白鲸都是真实尺寸，缸外的人身高 1.7 米</span>
+                <span class="human"><b>人类视角</b>：把白鲸换成一个人，水缸按同样比例换算成人的尺度</span>
+            </p>
+            <p id="load-status" role="status" hidden></p>
+            <p class="hint"><span class="mouse">拖动旋转水缸，滚轮缩放</span><span class="touch">单指旋转，双指缩放</span></p>
+        </div>
+
+        <div class="controls">
+            <label class="field">
+                <span class="field-label">海洋馆</span>
+                <select id="aquarium-select"></select>
+            </label>
+            <div class="segmented" role="group" aria-label="观看视角">
+                <button id="btn-tank" type="button">白鲸视角</button>
+                <button id="btn-human" type="button">人类视角</button>
+            </div>
+            <button id="beluga-audio-toggle" class="audio" type="button" aria-pressed="false"><span id="beluga-audio-label">白鲸叫声 · 关</span></button>
+        </div>
+
+        <article class="story">
+            <h2>一辈子，<br><span class="unit">20 平米</span>。</h2>
+            <p>在中国，有 <strong>240</strong> 头白鲸一辈子生活在海洋馆里。</p>
+            <p>野生白鲸成群生活，能潜到 600 米深，靠声呐和几公里外的同伴交流，能活 80 年。关进海洋馆后，它们只能活 20 年左右；发出的声波撞上水泥缸壁又弹回来，日夜不停。</p>
+            <p>一头 4 米长的白鲸，住在 20m × 5m × 5m 的水缸里。按身长换算成人，就像一个成年人一辈子困在不到 20 平米的房间里，独自老去。</p>
+
+            <dl class="record">
+                <dt>海洋馆</dt><dd id="info-name">—</dd>
+                <dt>所在地</dt><dd id="info-location">—</dd>
+                <dt>白鲸数量</dt><dd id="info-count">—</dd>
+                <dt>水缸尺寸</dt><dd id="info-size">—</dd>
+                <dt>换成人住</dt><dd id="info-human">—</dd>
+            </dl>
+
+            <h3>怎么看这个水缸</h3>
+            <ul class="views">
+                <li><b>白鲸视角</b>：按真实尺寸画出水缸和白鲸。缸外走动的人身高 1.7 米，可以拿来比大小。</li>
+                <li><b>人类视角</b>：把缸里的白鲸换成一个人，再把整个水缸按「4 米白鲸 = 1.7 米的人」等比例缩小。尺寸标注会换算成人的尺度，你看到的就是一个人一辈子要住的房间。</li>
+            </ul>
+
+            <p class="ask">拒绝动物表演，请不要购买海洋馆的门票。</p>
+            <p class="source">数据来源：中国鲸豚保护联盟（CCA）2024 年报告</p>
+        </article>
     </div>
 
-    <!-- UI Layer -->
-    <div class="z-10 relative h-full flex flex-col px-24 pt-16 pb-10 justify-between">
-
-        <!-- Top Section -->
-        <div class="flex justify-between items-start">
-            <!-- Title -->
-            <div>
-                <h1 class="text-[56px] mb-4 tracking-wider">海洋馆内的一生</h1>
-                <h2 class="text-[28px] text-gray-400 font-light">白鲸的故事</h2>
-
-                <!-- <div class="mt-24 space-y-3 text-gray-400 text-[18px] font-light leading-relaxed max-w-xs">
-                    <div class="space-y-2">
-                        <p>全国海洋馆共有240头白鲸</p>
-
-
-                    </div>
-
-                    <div class="mt-4 space-y-2 leading-tight">
-                        <p>在海里，它们可以生存80年; 在馆里，它们只能生存20年</p>
-
-                    </div>
-
-                    <div class="mt-4 space-y-2 leading-tight">
-                        <p>一头4米长、能潜入600米深海的白鲸，被锁在20m * 5m * 5m的水缸里。就像一个成年人一辈子被关在20㎡的小房间里，独自老去</p>
-                    </div>
-                </div> -->
-                <div class="mt-24 space-y-3 text-gray-400 text-[18px] font-light leading-relaxed max-w-xs">
-                    <!-- 数量 -->
-                    <p>
-                        在中国
-                        <span class="text-accent-blue text-2xl font-semibold mx-1 align-baseline">240</span>
-                        头白鲸一生都在海洋馆里
-                    </p>
-
-                    <!-- 寿命对比 -->
-                    <p>
-                        海里它们能活80年，馆里只能活20年。
-                    </p>
-
-                    <!-- 空间对比 -->
-                    <div class="space-y-3">
-                        <p>
-                            一头4米长、能潜入600米深海的白鲸，被锁在20m × 5m × 5m的水缸里,
-                        </p>
-                        <p>
-
-                            相当于一个成年人一辈子困在
-                            <span class="text-accent-blue text-2xl font-semibold mx-1 align-baseline">20㎡</span>
-                            的小房间里，独自老去。
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="flex space-x-4">
-                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
-                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Aquarium</div>
-                    <div class="text-sm font-medium" id="info-name">Loading...</div>
-                </div>
-                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
-                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Tank Size</div>
-                    <div class="text-sm font-medium" id="info-size">-</div>
-                </div>
-                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
-                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Beluga Count</div>
-                    <div class="text-sm font-medium" id="info-count">-</div>
-                </div>
-                <div class="bg-card-bg backdrop-blur-md border border-white/10 rounded-xl p-4 w-40">
-                    <div class="text-[10px] text-gray-500 uppercase mb-1 tracking-wider">Location</div>
-                    <div class="text-sm font-medium" id="info-location">-</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Center Visualization Placeholder -->
-        <div id="tank-container" class="absolute inset-0 z-0 flex items-center justify-center">
-            <!-- Placeholder for Three.js -->
-            <div
-                class="border border-blue-500/30 bg-blue-500/5 w-[800px] h-[400px] flex items-center justify-center text-blue-300 backdrop-blur-sm">
-                水箱加水中...
-            </div>
-        </div>
-
-        <!-- Bottom Section -->
-        <div class="flex justify-between items-end">
-            <!-- Controls -->
-            <div class="flex space-x-6 bg-black/40 backdrop-blur-md p-2 rounded-2xl border border-white/10">
-                <div class="flex flex-col space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase font-bold tracking-wider ml-1">选择海洋馆</label>
-                    <div class="relative">
-                        <select id="aquarium-select"
-                            class="bg-transparent text-white text-sm border border-white/20 rounded-lg pl-3 pr-8 py-2 w-64 focus:outline-none focus:border-accent-blue appearance-none cursor-pointer hover:bg-white/5 transition-colors">
-                            <option>Loading...</option>
-                        </select>
-                        <div
-                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase font-bold tracking-wider ml-1">观看模式</label>
-                    <div class="flex bg-white/5 rounded-lg p-1">
-                        <button
-                            class="px-4 py-1.5 rounded-md text-xs font-medium bg-accent-blue text-white shadow-lg transition-all"
-                            id="btn-tank">白鲸视角</button>
-                        <button
-                            class="px-4 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white transition-all"
-                            id="btn-human">人类视角</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="flex space-x-4">
-                <div
-                    class="px-4 py-2 rounded-full border border-white/10 text-xs text-gray-500 bg-black/20 backdrop-blur-md">
-                    拖动旋转 • 滚动缩放
-                </div>
-                <div
-                    class="px-4 py-2 rounded-full border border-white/10 text-xs text-gray-500 bg-black/20 backdrop-blur-md">
-                    源数据：CCA 2024
-                </div>
-                <!-- 白鲸叫声 toggle -->
-                <button id="beluga-audio-toggle"
-                    class="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-xs text-gray-500 bg-black/20 backdrop-blur-md hover:border-white/40 hover:text-white transition">
-                    <!-- 小滑块 -->
-                    <span class="inline-flex items-center w-7 h-4 rounded-full bg-white/10 px-[2px] transition-colors">
-                        <span id="beluga-audio-knob"
-                            class="h-3 w-3 rounded-full bg-gray-500 translate-x-0 transition-transform"></span>
-                    </span>
-                    <!-- 文案 -->
-                    <span id="beluga-audio-label">白鲸叫声 · 关</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="app.js?v=6"></script>
-    <audio id="beluga-audio" src="beluga_music.mp3" loop preload="auto"></audio>
+    <audio id="beluga-audio" src="beluga_music.mp3" loop preload="none"></audio>
+    <script type="module" src="app.js?v=7"></script>
 </body>
 
 </html>
